@@ -1,0 +1,84 @@
+﻿@page "/"
+@using VehicleMOTInfo.Data
+@inject MOTService motService
+
+<PageTitle>MOT</PageTitle>
+
+<h1>MOT Check</h1>
+
+<SurveyPrompt Title="Find your MOT history by entering the vehicle registration number below." />
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="mb-3">
+            <input type="text" class="form-control mb-3" @bind="registrationNumber" placeholder="Enter registration number" required />
+            @if (showValidationMessage)
+            {
+                <div class="alert alert-danger">Please enter a registration number.</div>
+            }
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="mb-3">
+            <button type="button" class="btn btn-primary" @onclick="GetVehicleInfo">Get MOT Info</button>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        @if (hasSearched)
+        {
+            if (vehicleInfos != null && vehicleInfos.Any())
+            {
+                <ul>
+                    @foreach (var vehicleInfo in vehicleInfos)
+                    {
+                        var latestTest = vehicleInfo.GetLatestMotTest();
+                        if (latestTest != null)
+                        {
+                            <li><b>Make:</b> @vehicleInfo.Make</li>
+                            <li><b>Model:</b> @vehicleInfo.Model</li>
+                            <li><b>Colour:</b> @vehicleInfo.PrimaryColour</li>
+                            <li><b>MOT Expiry Date:</b> @latestTest.ExpiryDate</li>
+                            <li><b>Mileage at last MOT:</b> @latestTest.OdometerValue @latestTest.OdometerUnit</li>
+                        }
+                    }
+                </ul>
+            }
+            else
+            {
+                <div class="alert alert-danger">
+                   <p>No vehicle information found. Please enter a valid registration number</p>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+@code {
+    private string? registrationNumber;
+    private List<VehicleInfo>? vehicleInfos;
+    private bool showValidationMessage = false;
+    private bool hasSearched = false; // Flag to track if the search button has been clicked
+
+    private async Task GetVehicleInfo()
+    {
+        if (string.IsNullOrWhiteSpace(registrationNumber))
+        {
+            showValidationMessage = true;
+            hasSearched = false;
+            vehicleInfos = null; // Clear previous results if any
+        }
+        else
+        {
+            showValidationMessage = false;
+            vehicleInfos = await motService.GetVehicleInfo(registrationNumber);
+            hasSearched = true;
+        }
+
+        StateHasChanged(); // Ensure the UI updates with the new data
+    }
+}
+
+
+
+
